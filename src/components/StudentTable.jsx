@@ -6,12 +6,13 @@ const StudentTable = ({
   onScan, 
   onStatusChange, 
   onRemarkChange, 
-  selectedStudent 
+  selectedStudent,
+  onSelectStudent,
+  onGeneratePDF
 }) => {
   const scanButtonRefs = useRef([]);
 
   useEffect(() => {
-    // Auto-focus first available scan button
     const firstScannableIndex = students.findIndex(
       student => !student.isScanned && student.status !== 'Absent'
     );
@@ -20,12 +21,16 @@ const StudentTable = ({
     }
   }, [students]);
 
-  const handleKeyDown = (event, student) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      if (!student.isScanned && student.status !== 'Absent') {
-        onScan(student.id);
-      }
+  const handleScanClick = (student) => {
+    if (!student.isScanned && student.status !== 'Absent') {
+      onSelectStudent(student);
+    }
+  };
+
+  const handlePDFClick = (student, event) => {
+    event.stopPropagation();
+    if (student.isScanned && student.scannedPages.length > 0) {
+      onGeneratePDF(student);
     }
   };
 
@@ -109,16 +114,22 @@ const StudentTable = ({
                       } ${
                         student.status === 'Absent' ? 'disabled' : ''
                       }`}
-                      onClick={() => onScan(student.id)}
-                      onKeyDown={(e) => handleKeyDown(e, student)}
+                      onClick={() => handleScanClick(student)}
                       disabled={student.isScanned || student.status === 'Absent'}
                       tabIndex={0}
                     >
-                      {student.isScanned ? 'Scanned ✓' : 'Scan'}
+                      {student.isScanned ? 'Scanned ✓' : 'Scan Copy'}
                     </button>
-                    <button className="details-btn" title="View Details">
-                      📋
-                    </button>
+                    
+                    {student.isScanned && student.scannedPages.length > 0 && (
+                      <button 
+                        className="pdf-btn"
+                        onClick={(e) => handlePDFClick(student, e)}
+                        title="Generate PDF"
+                      >
+                        📄 PDF
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

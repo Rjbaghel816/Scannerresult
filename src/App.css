@@ -1,105 +1,275 @@
 .app {
   min-height: 100vh;
-  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 20px 30px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-content {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.header-content h1 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 2.2em;
+  font-weight: 700;
+}
+
+.header-content p {
+  margin: 5px 0 0 0;
+  color: #7f8c8d;
+  font-size: 1.1em;
+}
+
+.header-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.opencv-status {
+  background: #2c3e50;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.scanning-info {
+  background: #e74c3c;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9em;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.main-content {
+  padding: 30px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
-.app-header {
-  background: var(--white);
-  padding: 20px;
-  border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.header-content h1 {
-  color: var(--text);
-  margin-bottom: 5px;
-  font-size: 2rem;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.header-content p {
-  color: var(--gray-dark);
-  font-size: 1.1rem;
-}
-
-.opencv-status {
-  padding: 8px 16px;
-  background: var(--gray-light);
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.main-content {
-  position: relative;
-}
-
-.scanning-overlay {
+/* Global Scanning Status */
+.global-scan-status {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(44, 62, 80, 0.95);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-weight: 600;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
   z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
 }
 
-.scanning-header {
-  background: var(--white);
-  padding: 15px 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
+.status-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scanning-indicator {
+  width: 8px;
+  height: 8px;
+  background: #00ff88;
+  border-radius: 50%;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+/* Student Table Updates */
+.table-header-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
+  padding: 0 10px;
 }
 
-.scanning-header h2 {
-  color: var(--text);
+.table-header-info h2 {
+  color: white;
   margin: 0;
+  font-size: 1.8em;
 }
 
-.stop-scan-btn {
-  background: var(--danger);
-  color: var(--white);
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
+.table-stats {
+  display: flex;
+  gap: 15px;
+}
+
+.table-stats .stat {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 15px;
   font-weight: 600;
-  transition: background 0.3s ease;
+  font-size: 0.9em;
+  backdrop-filter: blur(10px);
 }
 
-.stop-scan-btn:hover {
-  background: #c0392b;
+.student-row.absent {
+  background: rgba(231, 76, 60, 0.1) !important;
+}
+
+.student-row.absent:hover {
+  background: rgba(231, 76, 60, 0.15) !important;
+}
+
+.pages-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.pages-number {
+  font-weight: 700;
+  font-size: 1.1em;
+  color: #2c3e50;
+}
+
+.pages-badge {
+  background: #3498db;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7em;
+  font-weight: 600;
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-icon {
+  font-size: 1.1em;
+}
+
+.btn-text {
+  font-size: 0.9em;
+}
+
+.multi-page-badge {
+  background: #9b59b6;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7em;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.table-footer {
+  margin-top: 20px;
+  text-align: center;
+  padding: 20px;
+}
+
+.batch-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.batch-pdf-btn {
+  background: linear-gradient(135deg, #e74c3c, #e67e22);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.batch-pdf-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .app {
-    padding: 10px;
-  }
-
   .app-header {
+    padding: 15px 20px;
+  }
+  
+  .header-content h1 {
+    font-size: 1.8em;
+  }
+  
+  .header-stats {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .main-content {
+    padding: 15px;
+  }
+  
+  .table-header-info {
     flex-direction: column;
     gap: 15px;
     text-align: center;
   }
-
-  .header-content h1 {
-    font-size: 1.5rem;
+  
+  .table-stats {
+    justify-content: center;
   }
+  
+  .global-scan-status {
+    left: 20px;
+    right: 20px;
+    transform: none;
+    text-align: center;
+  }
+}
+/* Add this to your existing App.css */
+.global-scan-indicator {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 255, 136, 0.9);
+  color: #000;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-weight: 600;
+  box-shadow: 0 5px 25px rgba(0, 255, 136, 0.4);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.8; }
 }

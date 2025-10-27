@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import StudentTable from './components/StudentTable';
-import Scanner from './components/Scanner';
 import Stats from './components/Stats';
-import Camera from './components/Camera';
-import { useOpenCV } from './hooks/useOpenCV';
+import PhotoCapture from './components/PhotoCapture';
+import { generateStudentPDF } from './utils/pdfGenerator';
 import './App.css';
 
 const initialStudents = Array.from({ length: 20 }, (_, index) => ({
@@ -22,38 +21,38 @@ const initialStudents = Array.from({ length: 20 }, (_, index) => ({
 function App() {
   const [students, setStudents] = useState(initialStudents);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [showCamera, setShowCamera] = useState(false);
-  const { isOpenCVLoaded, loadOpenCV } = useOpenCV();
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
+  const [capturedPhotos, setCapturedPhotos] = useState([]);
 
-  useEffect(() => {
-    loadOpenCV();
-  }, [loadOpenCV]);
+  // ✅ Handle multiple photos capture
+  const handlePhotosCaptured = (photos) => {
+    if (selectedStudent && photos.length > 0) {
+      setStudents(prev =>
+        prev.map(student => {
+          if (student.id === selectedStudent.id) {
+            const newScannedPages = [
+              ...student.scannedPages,
+              ...photos.map((photo, index) => ({
+                id: Date.now() + index,
+                timestamp: new Date().toISOString(),
+                imageData: photo
+              }))
+            ];
 
-  // ✅ Handle individual scan
-  const handleScan = (studentId, imageData = null) => {
-    setStudents(prev =>
-      prev.map(student => {
-        if (student.id === studentId) {
-          const newScannedPages = [
-            ...student.scannedPages,
-            {
-              id: Date.now(),
-              timestamp: new Date().toISOString(),
-              imageData
-            }
-          ];
-
-          return {
-            ...student,
-            isScanned: true,
-            scannedPages: newScannedPages,
-            status: student.status === 'Pending' ? 'Present' : student.status,
-            scanTime: new Date().toISOString()
-          };
-        }
-        return student;
-      })
-    );
+            return {
+              ...student,
+              isScanned: true,
+              scannedPages: newScannedPages,
+              status: student.status === 'Pending' ? 'Present' : student.status,
+              scanTime: new Date().toISOString()
+            };
+          }
+          return student;
+        })
+      );
+      setCapturedPhotos([]);
+      setShowPhotoCapture(false);
+    }
   };
 
   // ✅ Change status manually
@@ -89,11 +88,21 @@ function App() {
     );
   };
 
-  // ✅ Handle capture from camera
-  const handleCameraScan = imageData => {
-    if (selectedStudent) {
-      handleScan(selectedStudent.id, imageData);
+  // ✅ Handle PDF generation
+  const handleGeneratePDF = async (student) => {
+    try {
+      await generateStudentPDF(student);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      alert('PDF generation failed!');
     }
+  };
+
+  // ✅ Handle scan request
+  const handleScanRequest = (student) => {
+    setSelectedStudent(student);
+    setCapturedPhotos([]);
+    setShowPhotoCapture(true);
   };
 
   // ✅ Summary stats
@@ -105,50 +114,30 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <h1>📱 Fast Scanning App</h1>
-          <p>Student Exam Paper Scanning System</p>
-        </div>
-        <div className="opencv-status">
-          OpenCV: {isOpenCVLoaded ? '✅ Loaded' : '⏳ Loading...'}
+          <h1>📱 Photo Scanner</h1>
+          <p>Capture Photos & Generate PDF</p>
         </div>
       </header>
 
       <main className="main-content">
         <Stats total={totalStudents} scanned={scannedCount} absent={absentCount} />
 
-        {selectedStudent && (
-          <div className="scanning-overlay">
-            <div className="scanning-header">
-              <h2>Scanning - {selectedStudent.rollNumber}</h2>
-              <button
-                onClick={() => setSelectedStudent(null)}
-                className="stop-scan-btn"
-              >
-                Close
-              </button>
-            </div>
-            <Scanner
-              student={selectedStudent}
-              onScan={handleScan}
-              onCameraRequest={() => setShowCamera(true)}
-            />
-          </div>
-        )}
-
         <StudentTable
           students={students}
-          onScan={handleScan}
           onStatusChange={handleStatusChange}
           onRemarkChange={handleRemarkChange}
           selectedStudent={selectedStudent}
-          onSelectStudent={setSelectedStudent}
+          onSelectStudent={handleScanRequest}
+          onGeneratePDF={handleGeneratePDF}
         />
 
-        {showCamera && (
-          <Camera
-            onCapture={handleCameraScan}
-            onClose={() => setShowCamera(false)}
-            isOpenCVLoaded={isOpenCVLoaded}
+        {showPhotoCapture && selectedStudent && (
+          <PhotoCapture
+            student={selectedStudent}
+            capturedPhotos={capturedPhotos}
+            onPhotosUpdate={setCapturedPhotos}
+            onFinish={handlePhotosCaptured}
+            onClose={() => setShowPhotoCapture(false)}
           />
         )}
       </main>
