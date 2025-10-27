@@ -1,0 +1,238 @@
+.student-table-container {
+  background: var(--white);
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.table-header {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: var(--white);
+  z-index: 100;
+}
+
+.table-header th {
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-bottom: none;
+  position: relative;
+}
+
+.table-header th::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 60%;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.table-header th:last-child::after {
+  display: none;
+}
+
+.student-row {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid var(--gray-light);
+}
+
+.student-row:last-child {
+  border-bottom: none;
+}
+
+.student-row:hover {
+  background-color: #f8f9ff;
+}
+
+.student-row.scanned {
+  background-color: #f0fff4;
+}
+
+.student-row.scanned:hover {
+  background-color: #e6ffed;
+}
+
+.student-row.selected {
+  background-color: #e3f2fd;
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.students-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--gray-light);
+}
+
+.roll-number {
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+}
+
+.scan-status .status-indicator {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-indicator.scanned {
+  background: var(--success);
+  color: white;
+}
+
+.status-indicator.pending {
+  background: var(--warning);
+  color: white;
+}
+
+.pages-count {
+  text-align: center;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.scan-time {
+  font-size: 0.85rem;
+  color: var(--gray-dark);
+  font-family: 'Courier New', monospace;
+}
+
+.status-select {
+  padding: 6px 10px;
+  border: 1px solid var(--gray);
+  border-radius: 6px;
+  background: var(--white);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.status-select:disabled {
+  background: var(--gray-light);
+  cursor: not-allowed;
+}
+
+.remark-input {
+  padding: 6px 10px;
+  border: 1px solid var(--gray);
+  border-radius: 6px;
+  width: 100%;
+  min-width: 150px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.remark-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.scan-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  min-width: 80px;
+}
+
+.scan-btn:not(.scanned):not(.disabled) {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.scan-btn:not(.scanned):not(.disabled):hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.scan-btn.scanned {
+  background: var(--success);
+  color: var(--white);
+  cursor: not-allowed;
+}
+
+.scan-btn.disabled {
+  background: var(--gray);
+  color: var(--gray-dark);
+  cursor: not-allowed;
+}
+
+.details-btn {
+  background: none;
+  border: 1px solid var(--gray);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.details-btn:hover {
+  background: var(--gray-light);
+  transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .student-table-container {
+    border-radius: 10px;
+    margin-top: 15px;
+  }
+
+  .students-table {
+    min-width: 800px;
+  }
+
+  .students-table td {
+    padding: 8px 6px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .scan-btn {
+    min-width: 60px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+}
