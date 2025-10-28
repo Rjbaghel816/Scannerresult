@@ -236,3 +236,159 @@
     font-size: 0.8rem;
   }
 }
+/* Excel Upload Section */
+.excel-upload-section {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin-bottom: 25px;
+  border: 2px dashed #dee2e6;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.excel-upload-section:hover {
+  border-color: #28a745;
+  background: #f0fff4;
+}
+
+.excel-upload-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.excel-upload-btn:hover {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.upload-hint {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+
+.empty-state p {
+  font-size: 18px;
+  margin: 0;
+}
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 15px 0;
+  border: 1px solid #dee2e6;
+}
+
+.pagination-controls.top {
+  margin-bottom: 20px;
+}
+
+.pagination-controls.bottom {
+  margin-top: 20px;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-size-select {
+  padding: 6px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background: white;
+  font-size: 14px;
+}
+
+.pagination-btn {
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  min-width: 40px;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.page-numbers {
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+  margin: 0 10px;
+}
+
+.page-numbers-list {
+  display: flex;
+  gap: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pagination-controls {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .pagination-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .page-numbers-list {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+}
