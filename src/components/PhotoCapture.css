@@ -113,15 +113,29 @@
   padding: 20px;
   background: #f8f9fa;
   position: relative;
+  min-height: 400px;
 }
 
-.fast-preview img {
-  max-height: 60vh;
+/* FIXED: Image container for proper crop coordinates */
+.image-container {
+  position: relative;
+  display: inline-block;
   max-width: 100%;
+  max-height: 70vh;
+}
+
+.image-container img {
+  max-width: 100%;
+  max-height: 70vh;
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border: 2px solid #ddd;
+  display: block;
+}
+
+.crop-mode .image-container {
+  cursor: crosshair;
 }
 
 .photo-badge {
@@ -134,6 +148,7 @@
   border-radius: 6px;
   font-size: 12px;
   font-weight: bold;
+  z-index: 5;
 }
 
 .quick-actions-preview {
@@ -324,10 +339,18 @@
 }
 
 .processing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: 15px;
+  z-index: 20;
+  border-radius: 8px;
 }
 
 .spinner {
@@ -399,11 +422,149 @@
   border-top: 1px solid #eee;
 }
 
+/* FIXED: Crop Tool Styles */
+.crop-area {
+  position: absolute;
+  border: 3px solid #007bff;
+  background: rgba(0, 123, 255, 0.15);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.crop-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #007bff;
+  border: 2px solid white;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  pointer-events: none;
+}
+
+.crop-handle.top-left {
+  top: -7px;
+  left: -7px;
+}
+
+.crop-handle.top-right {
+  top: -7px;
+  right: -7px;
+}
+
+.crop-handle.bottom-left {
+  bottom: -7px;
+  left: -7px;
+}
+
+.crop-handle.bottom-right {
+  bottom: -7px;
+  right: -7px;
+}
+
+.crop-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  background: white;
+  border-top: 1px solid #eee;
+  flex-wrap: wrap;
+}
+
+.crop-size-info {
+  background: #007bff;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+}
+
+/* Crop Action Buttons */
+.action-btn.crop {
+  background: #ffc107;
+  color: #212529;
+  border-color: #ffc107;
+  font-weight: bold;
+}
+
+.action-btn.crop:hover {
+  background: #e0a800;
+  border-color: #d39e00;
+}
+
+.action-btn.crop-confirm {
+  background: #28a745;
+  color: white;
+  border-color: #28a745;
+  font-weight: bold;
+}
+
+.action-btn.crop-confirm:hover {
+  background: #218838;
+  border-color: #1e7e34;
+}
+
+.action-btn.crop-cancel {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.action-btn.crop-cancel:hover {
+  background: #c82333;
+  border-color: #bd2130;
+}
+
+.action-btn.finish {
+  background: #28a745;
+  color: white;
+  border-color: #28a745;
+  font-weight: bold;
+}
+
+.action-btn.finish:hover {
+  background: #218838;
+  border-color: #1e7e34;
+}
+
+.action-btn.finish:focus {
+  outline: 3px solid #218838;
+  outline-offset: 2px;
+}
+
+/* New styles for image processing */
+.processing-text {
+  font-size: 12px;
+  color: #007bff;
+  margin-top: 8px;
+  font-weight: bold;
+}
+
+.feature-text {
+  color: #28a745;
+  font-weight: bold;
+  font-size: 11px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .photo-capture-modal {
     width: 95%;
     height: 95vh;
+  }
+  
+  .fast-preview .photo-preview {
+    padding: 10px;
+    min-height: 300px;
+  }
+  
+  .image-container img {
+    max-height: 60vh;
   }
   
   .quick-actions-preview {
@@ -429,21 +590,33 @@
   .secondary-btn, .finish-btn-mini {
     width: 200px;
   }
+  
+  .crop-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .crop-handle {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .crop-size-info {
+    order: -1;
+    margin-bottom: 10px;
+  }
 }
-/* CSS में यह style add करें */
-.action-btn.finish {
-  background: #28a745;
+
+/* Debug styles - can be removed after testing */
+.crop-debug {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.8);
   color: white;
-  border-color: #28a745;
-  font-weight: bold;
-}
-
-.action-btn.finish:hover {
-  background: #218838;
-  border-color: #1e7e34;
-}
-
-.action-btn.finish:focus {
-  outline: 3px solid #218838;
-  outline-offset: 2px;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  z-index: 100;
+  pointer-events: none;
 }
