@@ -1,261 +1,253 @@
 import React, { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
 import StudentTable from "./components/StudentTable";
 import Stats from "./components/Stats";
 import PhotoCapture from "./components/PhotoCapture";
-import { generateStudentPDF } from "./utils/pdfGenerator";
+import apiService from "./services/api";
 import "./App.css";
 
-// Initial students array (empty now since we'll load from Excel)
-const initialStudents = [];
-
 function App() {
-  const [students, setStudents] = useState(initialStudents);
+  const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [capturedPhotos, setCapturedPhotos] = useState([]);
   const [isExcelUploaded, setIsExcelUploaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // ✅ Pagination State
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // ✅ Excel File Process Function
-  const processExcelFile = (file) => {
-    const reader = new FileReader();
+  useEffect(() => {
+    fetchStudents();
+  }, [currentPage, itemsPerPage]);
 
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-        // Validate Excel structure
-        if (jsonData.length < 2) {
-          alert("Excel file must contain at least one data row");
-          return;
-        }
-
-        const headers = jsonData[0].map((header) =>
-          header?.toString().toLowerCase().trim()
-        );
-
-        // Check required columns
-        const requiredColumns = ["roll number", "subject code", "subject name"];
-        const missingColumns = requiredColumns.filter(
-          (col) => !headers.includes(col)
-        );
-
-        if (missingColumns.length > 0) {
-          alert(`Missing required columns: ${missingColumns.join(", ")}`);
-          return;
-        }
-
-        // Get column indices
-        const rollNumberIndex = headers.indexOf("roll number");
-        const subjectCodeIndex = headers.indexOf("subject code");
-        const subjectNameIndex = headers.indexOf("subject name");
-
-        // Process data rows
-        const processedData = [];
-        for (let i = 1; i < jsonData.length; i++) {
-          const row = jsonData[i];
-          if (row && row.length >= 3) {
-            processedData.push({
-              rollNumber: row[rollNumberIndex]?.toString().trim(),
-              subjectCode: row[subjectCodeIndex]?.toString().trim(),
-              subjectName: row[subjectNameIndex]?.toString().trim(),
-            });
-          }
-        }
-
-        if (processedData.length === 0) {
-          alert("No valid data found in Excel file");
-          return;
-        }
-
-        // Auto-create students from Excel data
-        createStudentsFromExcel(processedData);
-        setIsExcelUploaded(true);
-        setCurrentPage(1); // Reset to first page after upload
-      } catch (error) {
-        console.error("Error processing Excel file:", error);
-        alert("Error processing Excel file. Please check the format.");
+  const fetchStudents = async (page = currentPage, limit = itemsPerPage) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiService.getStudents({
+        page,
+        limit,
+        sortBy: 'rollNumber',
+        sortOrder: 'asc'
+      });
+      
+      if (response.success) {
+        setStudents(response.students);
+        setTotalStudents(response.pagination.totalStudents);
+        setTotalPages(response.pagination.totalPages);
+        setCurrentPage(response.pagination.currentPage);
       }
-    };
-
-    reader.onerror = () => {
-      alert("Error reading file");
-    };
-
-    reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Failed to fetch students:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ✅ Excel Data से Students Create करने का Function
-  const createStudentsFromExcel = (excelData) => {
-    const newStudents = excelData.map((row, index) => ({
-      id: `student-${Date.now()}-${index}`,
-      rollNumber: row.rollNumber,
-      subjectCode: row.subjectCode,
-      subjectName: row.subjectName,
-      status: "Pending",
-      remark: "",
-      scannedPages: [],
-      isScanned: false,
-      scanTime: null,
-      imageData: null,
-    }));
+  // ✅ FIXED: Handle photos captured WITHOUT auto-select next
+  const handlePhotosCaptured = async (photosArray) => {
+    if (selectedStudent && photosArray.length > 0) {
+      setLoading(true);
+      setError(null);
+      try {
+        // Convert base64 images to File objects
+        const imageFiles = await Promise.all(
+          photosArray.map(async (photo, index) => {
+            const response = await fetch(photo.data);
+            const blob = await response.blob();
+            return new File([blob], `page_${index + 1}.jpg`, { type: 'image/jpeg' });
+          })
+        );
 
-    setStudents(newStudents);
+        console.log('Uploading', imageFiles.length, 'images to backend...');
+
+        // Upload files to backend
+        const formData = new FormData();
+        imageFiles.forEach(file => {
+          formData.append('images', file);
+        });
+
+        const response = await apiService.uploadScans(selectedStudent._id, formData);
+        
+        if (response.success) {
+          const successMessage = `✅ Successfully scanned ${response.scannedPages || imageFiles.length} pages for ${selectedStudent.rollNumber}`;
+          console.log(successMessage);
+          alert(successMessage);
+          
+          // Simply close the modal and refresh data
+          setShowPhotoCapture(false);
+          setCapturedPhotos([]);
+          
+          // Refresh students list
+          await fetchStudents(currentPage, itemsPerPage);
+        } else {
+          setError(response.message || "Failed to upload scans");
+        }
+      } catch (error) {
+        console.error("Upload scans error:", error);
+        setError(error.message || "Failed to upload scanned images");
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
-  // ✅ File Input Handler
+  // ✅ FIXED: Handle PDF generation with better error handling
+  const handleGeneratePDF = async (student) => {
+    setError(null);
+    try {
+      // Check if student is scanned first
+      if (!student.isScanned) {
+        setError("Student has not been scanned yet. Please scan copies first.");
+        return;
+      }
+
+      if (!student.pdfPath) {
+        setError("PDF not generated yet. Please wait or rescan the copies.");
+        return;
+      }
+
+      const result = await apiService.generatePDF(student._id);
+      if (result.success) {
+        console.log(`✅ PDF downloaded: ${result.filename}`);
+        
+        // Refresh students list to update PDF status
+        await fetchStudents(currentPage, itemsPerPage);
+      }
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      setError(error.message || "PDF download failed. Please try scanning again.");
+    }
+  };
+
+  // ✅ FIXED: Upload actual Excel file instead of parsed data
+  const uploadExcelToBackend = async (file) => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('📤 Uploading file to backend:', file.name);
+
+      // ✅ Create FormData and append the actual file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // ✅ Use apiService.uploadExcel with FormData
+      const response = await apiService.uploadExcel(formData);
+      
+      if (response.success) {
+        setIsExcelUploaded(true);
+        await fetchStudents(1, itemsPerPage); // Refresh with first page
+        console.log('✅ Excel upload successful:', response);
+      }
+    } catch (error) {
+      console.error('❌ Excel upload failed:', error);
+      setError(error.message || "Failed to upload Excel file");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ FIXED: Handle file upload directly without client-side parsing
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    const validTypes = [
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "text/csv",
-    ];
-
-    if (
-      !validTypes.includes(file.type) &&
-      !file.name.match(/\.(xlsx|xls|csv)$/)
-    ) {
-      alert("Please upload a valid Excel file (.xlsx, .xls, .csv)");
+    if (!file.name.match(/\.(xlsx|xls)$/)) {
+      setError("Please upload a valid Excel file (.xlsx, .xls)");
       return;
     }
 
-    processExcelFile(file);
-    event.target.value = ""; // Reset file input
+    // ✅ Directly upload the file without client-side parsing
+    uploadExcelToBackend(file);
+
+    // Reset file input
+    event.target.value = "";
   };
 
-  // ✅ Pagination Calculations
-  const totalPages = Math.ceil(students.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentStudents = students.slice(startIndex, endIndex);
-
-  // ✅ Handle page change
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
   };
 
-  // ✅ Handle items per page change
   const handleItemsPerPageChange = (e) => {
-    setItemsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to first page
+    const newItemsPerPage = parseInt(e.target.value);
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
 
-  // ✅ Handle multiple photos capture
-  const handlePhotosCaptured = (photos) => {
-    if (selectedStudent && photos.length > 0) {
-      setStudents((prev) =>
-        prev.map((student) => {
-          if (student.id === selectedStudent.id) {
-            const newScannedPages = [
-              ...student.scannedPages,
-              ...photos.map((photo, index) => ({
-                id: Date.now() + index,
-                timestamp: new Date().toISOString(),
-                imageData: photo,
-              })),
-            ];
-
-            return {
-              ...student,
-              isScanned: true,
-              scannedPages: newScannedPages,
-              status: student.status === "Pending" ? "Present" : student.status,
-              scanTime: new Date().toISOString(),
-            };
-          }
-          return student;
-        })
-      );
-      setCapturedPhotos([]);
-      setShowPhotoCapture(false);
-    }
-  };
-
-  // ✅ Change status manually
-  const handleStatusChange = (studentId, newStatus) => {
-    setStudents((prev) =>
-      prev.map((student) => {
-        if (student.id === studentId) {
-          const updated = {
-            ...student,
-            status: newStatus,
-            isScanned: newStatus === "Absent" ? false : student.isScanned,
-          };
-
-          if (newStatus === "Absent") {
-            updated.scannedPages = [];
-            updated.scanTime = null;
-            updated.imageData = null;
-          }
-
-          return updated;
-        }
-        return student;
-      })
-    );
-  };
-
-  // ✅ Handle remarks
-  const handleRemarkChange = (studentId, remark) => {
-    setStudents((prev) =>
-      prev.map((student) =>
-        student.id === studentId ? { ...student, remark } : student
-      )
-    );
-  };
-
-  // ✅ Handle PDF generation
-  const handleGeneratePDF = async (student) => {
+  const handleStatusChange = async (studentId, newStatus) => {
     try {
-      await generateStudentPDF(student);
+      const response = await apiService.updateStudentStatus(studentId, newStatus);
+      if (response.success) {
+        // Update local state
+        setStudents(prev => prev.map(student => 
+          student._id === studentId 
+            ? { ...student, status: newStatus }
+            : student
+        ));
+      }
     } catch (error) {
-      console.error("PDF generation failed:", error);
-      alert("PDF generation failed!");
+      console.error("Failed to update status:", error);
+      setError("Failed to update student status");
     }
   };
 
-  // ✅ Handle scan request
+  const handleRemarkChange = async (studentId, remark) => {
+    try {
+      const response = await apiService.updateStudentRemark(studentId, remark);
+      if (response.success) {
+        // Update local state
+        setStudents(prev => prev.map(student => 
+          student._id === studentId 
+            ? { ...student, remark }
+            : student
+        ));
+      }
+    } catch (error) {
+      console.error("Failed to update remark:", error);
+      setError("Failed to update student remark");
+    }
+  };
+
   const handleScanRequest = (student) => {
     setSelectedStudent(student);
-    setCapturedPhotos([]);
     setShowPhotoCapture(true);
+    setCapturedPhotos([]); // Reset photos when starting new scan
   };
-
-  // ✅ Summary stats
-  const scannedCount = students.filter((s) => s.isScanned).length;
-  const absentCount = students.filter((s) => s.status === "Absent").length;
-  const totalStudents = students.length;
 
   return (
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <h1>📱 Photo Scanner</h1>
-          <p>Capture Photos & Generate PDF</p>
+          <h1>📱 University Exam Copy Scanner</h1>
+          <p>Capture Photos & Generate PDF - Data Saved to Database</p>
         </div>
       </header>
 
       <main className="main-content">
+        {error && (
+          <div className="error-banner">
+            <span>❌ {error}</span>
+            <button onClick={() => setError(null)} className="error-close">
+              ×
+            </button>
+          </div>
+        )}
+
         <Stats
           total={totalStudents}
-          scanned={scannedCount}
-          absent={absentCount}
+          scanned={students.filter(s => s.isScanned).length}
+          absent={students.filter(s => s.status === 'Absent').length}
         />
 
         <StudentTable
-          students={currentStudents}
+          students={students}
           onStatusChange={handleStatusChange}
           onRemarkChange={handleRemarkChange}
           selectedStudent={selectedStudent}
@@ -263,10 +255,10 @@ function App() {
           onGeneratePDF={handleGeneratePDF}
           onExcelUpload={handleFileUpload}
           isExcelUploaded={isExcelUploaded}
-          // Pagination Props
+          loading={loading}
           currentPage={currentPage}
           totalPages={totalPages}
-          totalStudents={students.length}
+          totalStudents={totalStudents}
           itemsPerPage={itemsPerPage}
           onPageChange={handlePageChange}
           onItemsPerPageChange={handleItemsPerPageChange}
@@ -278,7 +270,10 @@ function App() {
             capturedPhotos={capturedPhotos}
             onPhotosUpdate={setCapturedPhotos}
             onFinish={handlePhotosCaptured}
-            onClose={() => setShowPhotoCapture(false)}
+            onClose={() => {
+              setShowPhotoCapture(false);
+              setCapturedPhotos([]);
+            }}
           />
         )}
       </main>

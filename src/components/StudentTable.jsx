@@ -1,45 +1,41 @@
-import React, { useRef, useEffect } from 'react';
-import './StudentTable.css';
+import React, { useRef, useEffect } from "react";
+import "./StudentTable.css";
 
-const StudentTable = ({ 
-  students, 
-  onStatusChange, 
-  onRemarkChange, 
+const StudentTable = ({
+  students,
+  onStatusChange,
+  onRemarkChange,
   selectedStudent,
   onSelectStudent,
   onGeneratePDF,
   onExcelUpload,
   isExcelUploaded,
+  loading,
   // Pagination Props
   currentPage,
   totalPages,
   totalStudents,
   itemsPerPage,
   onPageChange,
-  onItemsPerPageChange
+  onItemsPerPageChange,
 }) => {
-  const scanButtonRefs = useRef([]);
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    const firstScannableIndex = students.findIndex(
-      student => !student.isScanned && student.status !== 'Absent'
-    );
-    if (firstScannableIndex !== -1 && scanButtonRefs.current[firstScannableIndex]) {
-      scanButtonRefs.current[firstScannableIndex].focus();
-    }
-  }, [students]);
-
   const handleScanClick = (student) => {
-    if (!student.isScanned && student.status !== 'Absent') {
+    if (!student.isScanned && student.status !== "Absent") {
       onSelectStudent(student);
     }
   };
 
   const handlePDFClick = (student, event) => {
     event.stopPropagation();
-    if (student.isScanned && student.scannedPages.length > 0) {
+    // ✅ UPDATED: Check if student is scanned and has PDF path
+    if (student.isScanned && student.pdfPath) {
       onGeneratePDF(student);
+    } else if (student.isScanned && !student.pdfPath) {
+      alert("PDF is being generated. Please wait a moment...");
+    } else {
+      alert("Please scan copies first to generate PDF.");
     }
   };
 
@@ -48,34 +44,63 @@ const StudentTable = ({
   };
 
   const getScanTime = (scanTime) => {
-    if (!scanTime) return '';
+    if (!scanTime) return "";
     return new Date(scanTime).toLocaleTimeString();
   };
 
-  // ✅ Generate page numbers for pagination
+  // ✅ ADDED: Get PDF generation time
+  const getPDFTime = (pdfGeneratedAt) => {
+    if (!pdfGeneratedAt) return "";
+    return new Date(pdfGeneratedAt).toLocaleTimeString();
+  };
+
+  // ✅ ADDED: Format file size
+  const formatFileSize = (bytes) => {
+    if (!bytes) return "";
+    if (bytes === 0) return "0 Bytes";
+
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
-    
+
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
+
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
-    
+
     return pages;
   };
+
+  if (loading) {
+    return (
+      <div className="student-table-container">
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Loading students data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="student-table-container">
       {/* Excel Upload Section */}
       <div className="excel-upload-section">
-        <button 
+        <button
           className="excel-upload-btn"
           onClick={handleExcelUploadClick}
           title="Upload Excel file with Roll Numbers and Subject Details"
@@ -87,59 +112,75 @@ const StudentTable = ({
           ref={fileInputRef}
           onChange={onExcelUpload}
           accept=".xlsx, .xls, .csv"
-          style={{ display: 'none' }}
+          style={{ display: "none" }}
         />
         <span className="upload-hint">
           Upload Excel with columns: Roll Number, Subject Code, Subject Name
         </span>
+
+        {/* ✅ ADDED: Quick Stats */}
+        {students.length > 0 && (
+          <div className="quick-stats">
+            <span className="stat-item">📋 Total: {totalStudents}</span>
+            <span className="stat-item">
+              ✅ Scanned: {students.filter((s) => s.isScanned).length}
+            </span>
+            <span className="stat-item">
+              📄 PDFs: {students.filter((s) => s.pdfPath).length}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Pagination Controls - Top */}
       {students.length > 0 && (
         <div className="pagination-controls top">
           <div className="pagination-info">
-            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalStudents)} of {totalStudents} students
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, totalStudents)} of{" "}
+            {totalStudents} students
           </div>
           <div className="pagination-actions">
-            <select 
-              value={itemsPerPage} 
+            <select
+              value={itemsPerPage}
               onChange={onItemsPerPageChange}
               className="page-size-select"
             >
+              <option value={10}>10 per page</option>
               <option value={20}>20 per page</option>
               <option value={50}>50 per page</option>
               <option value={100}>100 per page</option>
             </select>
-            
-            <button 
+
+            <button
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1}
               className="pagination-btn first"
             >
               ⏮ First
             </button>
-            
-            <button 
+
+            <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
               className="pagination-btn prev"
             >
               ◀ Prev
             </button>
-            
+
             <span className="page-numbers">
               Page {currentPage} of {totalPages}
             </span>
-            
-            <button 
+
+            <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               className="pagination-btn next"
             >
               Next ▶
             </button>
-            
-            <button 
+
+            <button
               onClick={() => onPageChange(totalPages)}
               disabled={currentPage === totalPages}
               className="pagination-btn last"
@@ -153,7 +194,15 @@ const StudentTable = ({
       <div className="table-wrapper">
         {students.length === 0 ? (
           <div className="empty-state">
-            <p>No students data available. Please upload an Excel file.</p>
+            <div className="empty-icon">📊</div>
+            <h3>No Students Data</h3>
+            <p>Please upload an Excel file to get started</p>
+            <button
+              className="excel-upload-btn empty-btn"
+              onClick={handleExcelUploadClick}
+            >
+              📊 Upload Excel File
+            </button>
           </div>
         ) : (
           <table className="students-table">
@@ -165,6 +214,7 @@ const StudentTable = ({
                 <th>Scan Status</th>
                 <th>Pages</th>
                 <th>Scan Time</th>
+                <th>PDF Status</th>
                 <th>Status</th>
                 <th>Remark</th>
                 <th>Actions</th>
@@ -172,37 +222,82 @@ const StudentTable = ({
             </thead>
             <tbody>
               {students.map((student, index) => (
-                <tr 
-                  key={student.id} 
+                <tr
+                  key={student._id || student.id}
                   className={`student-row ${
-                    student.isScanned ? 'scanned' : ''
-                  } ${
-                    selectedStudent?.id === student.id ? 'selected' : ''
+                    student.isScanned ? "scanned" : ""
+                  } ${selectedStudent?._id === student._id ? "selected" : ""} ${
+                    student.status === "Absent" ? "absent" : ""
                   }`}
                 >
                   <td className="roll-number">{student.rollNumber}</td>
-                  <td>{student.subjectCode}</td>
-                  <td>{student.subjectName}</td>
+                  <td className="subject-code">{student.subjectCode}</td>
+                  <td className="subject-name">{student.subjectName}</td>
+
                   <td>
                     <div className="scan-status">
-                      <span className={`status-indicator ${
-                        student.isScanned ? 'scanned' : 'pending'
-                      }`}>
-                        {student.isScanned ? '✓ Scanned' : '⏳ Pending'}
+                      <span
+                        className={`status-indicator ${
+                          student.isScanned ? "scanned" : "pending"
+                        }`}
+                      >
+                        {student.isScanned ? "✓ Scanned" : "⏳ Pending"}
                       </span>
                     </div>
                   </td>
+
                   <td className="pages-count">
-                    {student.scannedPages.length}
+                    <div className="pages-info">
+                      <span className="pages-number">
+                        {student.scannedPages ? student.scannedPages.length : 0}
+                      </span>
+                      {student.scannedPages &&
+                        student.scannedPages.length > 0 && (
+                          <span className="pages-label">pages</span>
+                        )}
+                    </div>
                   </td>
-                  <td className="scan-time">
-                    {getScanTime(student.scanTime)}
+
+                  <td className="scan-time">{getScanTime(student.scanTime)}</td>
+
+                  {/* ✅ ADDED: PDF Status Column */}
+                  <td className="pdf-status">
+                    <div className="pdf-info">
+                      {student.pdfPath ? (
+                        <span className="pdf-available" title="PDF Available">
+                          📄 Ready
+                        </span>
+                      ) : student.isScanned ? (
+                        <span
+                          className="pdf-processing"
+                          title="PDF Being Generated"
+                        >
+                          ⏳ Processing
+                        </span>
+                      ) : (
+                        <span className="pdf-pending" title="Not Scanned Yet">
+                          ❌ Not Generated
+                        </span>
+                      )}
+                    </div>
                   </td>
+
                   <td>
                     <select
                       value={student.status}
-                      onChange={(e) => onStatusChange(student.id, e.target.value)}
-                      className="status-select"
+                      onChange={(e) =>
+                        onStatusChange(
+                          student._id || student.id,
+                          e.target.value
+                        )
+                      }
+                      className={`status-select ${
+                        student.status === "Absent"
+                          ? "absent"
+                          : student.status === "Present"
+                          ? "present"
+                          : "pending"
+                      }`}
                       disabled={student.isScanned}
                     >
                       <option value="Pending">Pending</option>
@@ -210,40 +305,80 @@ const StudentTable = ({
                       <option value="Absent">Absent</option>
                     </select>
                   </td>
+
                   <td>
                     <input
                       type="text"
-                      value={student.remark}
-                      onChange={(e) => onRemarkChange(student.id, e.target.value)}
+                      value={student.remark || ""}
+                      onChange={(e) =>
+                        onRemarkChange(
+                          student._id || student.id,
+                          e.target.value
+                        )
+                      }
                       placeholder="Add remark..."
                       className="remark-input"
+                      maxLength={100}
                     />
+                    {student.remark && (
+                      <div className="remark-length">
+                        {student.remark.length}/100
+                      </div>
+                    )}
                   </td>
+
                   <td>
                     <div className="action-buttons">
+                      {/* Scan Button */}
                       <button
-                        ref={el => scanButtonRefs.current[index] = el}
                         className={`scan-btn ${
-                          student.isScanned ? 'scanned' : ''
-                        } ${
-                          student.status === 'Absent' ? 'disabled' : ''
-                        }`}
+                          student.isScanned ? "scanned" : ""
+                        } ${student.status === "Absent" ? "disabled" : ""}`}
                         onClick={() => handleScanClick(student)}
-                        disabled={student.isScanned || student.status === 'Absent'}
-                        tabIndex={0}
+                        disabled={
+                          student.isScanned || student.status === "Absent"
+                        }
+                        title={
+                          student.isScanned
+                            ? "Already scanned"
+                            : student.status === "Absent"
+                            ? "Cannot scan absent students"
+                            : "Scan student copies"
+                        }
                       >
-                        {student.isScanned ? 'Scanned ✓' : 'Scan Copy'}
+                        {student.isScanned ? (
+                          <>
+                            <span className="btn-icon">✓</span>
+                            Scanned
+                          </>
+                        ) : (
+                          <>
+                            <span className="btn-icon">📷</span>
+                            Scan Copy
+                          </>
+                        )}
                       </button>
-                      
-                      {student.isScanned && student.scannedPages.length > 0 && (
-                        <button 
-                          className="pdf-btn"
+
+                      {/* PDF Button - ✅ UPDATED: Show only when PDF is available */}
+                      {student.pdfPath ? (
+                        <button
+                          className="pdf-btn available"
                           onClick={(e) => handlePDFClick(student, e)}
-                          title="Generate PDF"
+                          title="Download PDF"
                         >
-                          📄 PDF
+                          <span className="btn-icon">📄</span>
+                          Download PDF
                         </button>
-                      )}
+                      ) : student.isScanned ? (
+                        <button
+                          className="pdf-btn processing"
+                          disabled
+                          title="PDF is being generated"
+                        >
+                          <span className="btn-icon">⏳</span>
+                          Generating...
+                        </button>
+                      ) : null}
                     </div>
                   </td>
                 </tr>
@@ -257,59 +392,79 @@ const StudentTable = ({
       {students.length > 0 && totalPages > 1 && (
         <div className="pagination-controls bottom">
           <div className="pagination-info">
-            Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalStudents)} of {totalStudents} students
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, totalStudents)} of{" "}
+            {totalStudents} students
           </div>
           <div className="pagination-actions">
-            <button 
+            <button
               onClick={() => onPageChange(1)}
               disabled={currentPage === 1}
               className="pagination-btn first"
+              title="First Page"
             >
               ⏮ First
             </button>
-            
-            <button 
+
+            <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
               className="pagination-btn prev"
+              title="Previous Page"
             >
               ◀ Prev
             </button>
-            
+
             <div className="page-numbers-list">
-              {getPageNumbers().map(page => (
+              {getPageNumbers().map((page) => (
                 <button
                   key={page}
                   onClick={() => onPageChange(page)}
                   className={`pagination-btn page-number ${
-                    currentPage === page ? 'active' : ''
+                    currentPage === page ? "active" : ""
                   }`}
+                  title={`Page ${page}`}
                 >
                   {page}
                 </button>
               ))}
             </div>
-            
-            <button 
+
+            <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               className="pagination-btn next"
+              title="Next Page"
             >
               Next ▶
             </button>
-            
-            <button 
+
+            <button
               onClick={() => onPageChange(totalPages)}
               disabled={currentPage === totalPages}
               className="pagination-btn last"
+              title="Last Page"
             >
               Last ⏭
             </button>
           </div>
         </div>
       )}
+
+      {/* ✅ ADDED: Footer Info */}
+      {students.length > 0 && (
+        <div className="table-footer">
+          <div className="footer-info">
+            <span className="footer-item">
+              💡 Tip: Scan copies first, then download PDF
+            </span>
+            <span className="footer-item">
+              📁 PDFs are automatically generated after scanning
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
 export default StudentTable;
